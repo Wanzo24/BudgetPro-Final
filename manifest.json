@@ -1,20 +1,21 @@
 {
+  "name": "Budget Pro Premium",
   "short_name": "BudgetPro",
-  "name": "Budget Pro Premium v3",
+  "description": "Aplikasi Pengurusan Belanjawan Premium",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#6366f1",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/10149/10149458.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/10149/10149458.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/1077/1077114.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "start_url": "./index.html",
-  "display": "standalone",
-  "theme_color": "#6366f1",
-  "background_color": "#f8fafc"
+  ]
 }
