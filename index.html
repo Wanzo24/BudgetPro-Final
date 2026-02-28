@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Budget Pro Premium v2.4.1</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --primary: #6366f1; --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --subtext: #64748b; --border: #e2e8f0;
+        }
+        .dark-mode { 
+            --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --subtext: #94a3b8; --border: #334155;
+        }
+        * { box-sizing: border-box; }
+
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding-bottom: 100px; transition: 0.3s; -webkit-tap-highlight-color: transparent; }
+        
+        .hero { 
+            background: linear-gradient(135deg, var(--primary), #818cf8); 
+            padding: 30px; border-radius: 32px; color: white; margin-bottom: 20px;
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.2);
+            position: relative; overflow: hidden;
+        }
+        .stats-grid { display: flex; gap: 12px; margin-top: 20px; }
+        .stat-box { 
+            flex: 1; 
+            background: rgba(255, 255, 255, 0.15); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            padding: 15px; border-radius: 20px; 
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        #auth-container-wrapper { 
+            display: flex; min-height: 100vh; align-items: center; justify-content: center; 
+            padding: 20px; background: var(--bg);
+        }
+        .auth-card { 
+            width: 100%; max-width: 400px; text-align: center; background: var(--card); 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1); padding: 45px 30px; border-radius: 35px;
+        }
+        input, select { 
+            width: 100%; padding: 16px; margin-bottom: 12px; border-radius: 16px; 
+            border: 1px solid var(--border); background: var(--bg); color: var(--text); 
+            font-size: 15px; outline: none; display: block;
+        }
+        .btn-pro { 
+            width: 100%; padding: 18px; border: none; border-radius: 18px; 
+            font-weight: 700; cursor: pointer; background: var(--primary); color: white; 
+            transition: 0.2s; display: block;
+        }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background: var(--card); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--border); z-index: 2000; box-shadow: 0 -10px 30px rgba(0,0,0,0.05); padding-bottom: env(safe-area-inset-bottom); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--subtext); cursor: pointer; flex: 1; transition: 0.3s; }
+        .nav-item.active { color: var(--primary); font-weight: 800; }
+        
+        .budget-card { background: var(--card); padding: 24px; border-radius: 28px; margin-bottom: 25px; border: 1px solid var(--border); }
+        .progress-container { background: var(--bg); height: 10px; border-radius: 10px; margin: 15px 0 10px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0%; transition: 0.5s; background: var(--success); }
+        .page { display: none; padding: 20px; max-width: 600px; margin: auto; animation: slideUp 0.4s ease; }
+        .page.active { display: block; }
+        li { background: var(--card); margin-bottom: 12px; padding: 16px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: flex-end; z-index: 3000; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--card); width: 100%; padding: 30px; border-radius: 30px 30px 0 0; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div id="auth-container-wrapper">
+    <div class="auth-card">
+        <div style="font-size: 55px; margin-bottom: 15px;">🌎</div>
+        <h2 id="auth-title" style="color: var(--primary); font-size: 30px; margin: 0; font-weight: 800;">Budget Pro</h2>
+        <p id="auth-subtitle" data-key="sub_title" style="margin-bottom: 30px;">Versi Antarabangsa Premium</p>
+        
+        <div id="signup-fields" style="display:none;"><input type="text" id="username" data-placeholder="ph_name" placeholder="Nama Penuh"></div>
+        <input type="email" id="email" data-placeholder="ph_email" placeholder="Alamat Emel">
+        <input type="password" id="password" data-placeholder="ph_pass" placeholder="Kata Laluan">
+        
+        <button id="forgot-btn" onclick="resetPassword()" style="background:none; border:none; color:var(--subtext); font-size: 13px; font-weight: 700; margin-bottom: 20px; width:100%;" data-key="forgot_pass">Lupa Kata Laluan?</button>
+        
+        <button id="login-btn" class="btn-pro" onclick="login()" data-key="btn_login">Log Masuk</button>
+        <button id="signup-btn" class="btn-pro" style="display:none;" onclick="signup()" data-key="btn_signup">Daftar Sekarang</button>
+        
+        <div style="margin-top: 25px; border-top: 1px solid var(--border); padding-top: 20px;">
+            <button id="toggle-auth-btn" onclick="toggleAuth()" style="background:none; border:none; color:var(--primary); font-weight:700; font-size: 14px; cursor:pointer;" data-key="toggle_signup">Cipta Akaun Baru</button>
+        </div>
+    </div>
+</div>
+
+<div id="app-shell" style="display: none;">
+    <main>
+        <div id="page-dashboard" class="page active">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div><small style="color:var(--subtext); font-weight:600;" data-key="welcome">Selamat Kembali,</small><h2 id="user-display" style="margin:0; font-size:22px;">User</h2></div>
+                <div id="user-av" style="width:45px; height:45px; background:var(--primary); color:white; border-radius:15px; display:flex; align-items:center; justify-content:center; font-weight:bold;">?</div>
+            </div>
+            <div class="hero">
+                <div style="display:flex; justify-content:space-between;"><span style="font-weight:700; font-size:12px;" data-key="total_bal">JUMLAH BAKI</span>
+                    <select id="hero-curr-drop" onchange="updateGlobalCurr(this.value)" style="width:auto; margin:0; padding:2px 8px; background:rgba(255,255,255,0.2); border:none; color:white; border-radius:8px; font-size:11px;"><option value="RM">MYR</option><option value="$">USD</option><option value="Rp">IDR</option></select>
+                </div>
+                <h1 id="total-balance">0.00</h1>
+                <div class="stats-grid">
+                    <div class="stat-box"><small style="font-size:10px; font-weight:700; display:block;" data-key="income">MASUK</small><strong id="total-inc">0.00</strong></div>
+                    <div class="stat-box"><small style="font-size:10px; font-weight:700; display:block;" data-key="expense">KELUAR</small><strong id="total-exp">0.00</strong></div>
+                </div>
+            </div>
+            <div class="budget-card">
+                <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:700; font-size:14px;" data-key="monthly_limit">Had Belanja</span><button onclick="setBudgetPrompt()" style="background:none; border:1px solid var(--border); padding:5px 10px; border-radius:10px; font-size:11px;" data-key="set_limit">Set Had</button></div>
+                <h2 id="budget-display" style="margin:10px 0 0 0; color:var(--primary);">0.00</h2>
+                <div class="progress-container"><div id="budget-progress" class="progress-bar"></div></div>
+                <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:700;"><span id="budget-status" data-key="ready">Sedia</span><span id="budget-remaining">Baki: 0</span></div>
+            </div>
+            <canvas id="chart" style="max-height: 200px; margin-bottom:20px;"></canvas>
+            <h4 data-key="recent_tx">Transaksi Terkini</h4>
+            <ul id="list" style="padding:0; list-style:none;"></ul>
+        </div>
+
+        <div id="page-settings" class="page">
+            <h2 style="font-weight:800; margin-bottom:25px;" data-key="nav_settings">Tetapan</h2>
+            <div class="card" style="background:var(--card); padding:20px; border-radius:24px; border:1px solid var(--border); margin-bottom:20px;">
+                <div style="text-align:center; margin-bottom:20px;"><div id="set-av" style="width:70px; height:70px; background:var(--primary); color:white; border-radius:20px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:28px; margin:0 auto 10px;">?</div><h3 id="set-username" style="margin:0;">-</h3><p id="set-email" style="color:var(--subtext); margin:5px 0;">-</p></div>
+                <label style="font-size:11px; font-weight:800; color:var(--subtext); margin-left:5px;" data-key="lang_label">PILIH BAHASA</label>
+                <select id="lang-switch" onchange="changeLang(this.value)"><option value="ms">Bahasa Melayu</option><option value="en">English</option><option value="id">Bahasa Indonesia</option></select>
+                <button onclick="document.body.classList.toggle('dark-mode')" class="btn-pro" style="background:var(--bg); color:var(--text); border:1px solid var(--border); margin-bottom:10px;" data-key="dark_mode">🌙 Mod Gelap / Cerah</button>
+                <button onclick="logout()" class="btn-pro" style="background:rgba(239, 68, 68, 0.1); color:var(--danger);" data-key="logout">Log Keluar</button>
+            </div>
+            <div style="background:var(--card); padding:25px; border-radius:24px; border:1px solid var(--border); text-align:center; position:relative; overflow:hidden;">
+                <div style="position:absolute; top:-10px; right:-10px; font-size:50px; opacity:0.05;">📱</div>
+                <h4 style="margin:0; font-weight:800; color:var(--primary);">Budget Pro Premium</h4>
+                <p style="font-size:12px; margin:5px 0; font-weight:700;">Version 2.4.1 (Stable Build)</p>
+                <div style="margin-top:15px; padding-top:15px; border-top:1px solid var(--border); font-size:11px; color:var(--subtext);">
+                    <p style="margin:2px 0;">Developed by <strong>W-Tech</strong></p>
+                    <p style="margin:2px 0;">© 2026 All Rights Reserved</p>
+                </div>
+                <button onclick="alert('Aplikasi anda dikemaskini!')" style="margin-top:15px; background:none; border:1px solid var(--primary); color:var(--primary); padding:6px 15px; border-radius:10px; font-size:10px; font-weight:800; cursor:pointer;">SEMAK KEMASKINI</button>
+            </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="showPage('dashboard', this)"><span>🏠</span><span data-key="nav_home">Utama</span></div>
+        <div class="nav-item" onclick="toggleAddModal()"><div style="width:50px; height:50px; background:var(--primary); border-radius:18px; display:flex; align-items:center; justify-content:center; margin-top:-30px; color:white; font-size:25px; box-shadow:0 10px 20px rgba(99,102,241,0.3);">+</div></div>
+        <div class="nav-item" onclick="showPage('settings', this)"><span>⚙️</span><span data-key="nav_settings">Tetapan</span></div>
+    </nav>
+</div>
+
+<div id="add-modal" class="modal" onclick="if(event.target==this) toggleAddModal()">
+    <div class="modal-content"><h3 style="margin-top:0;" data-key="new_record">Rekod Baru</h3><input type="text" id="txn-desc" data-placeholder="ph_desc" placeholder="Keterangan"><select id="txn-cat"></select><input type="number" id="txn-amt" data-placeholder="ph_amt" placeholder="Jumlah"><button onclick="saveTxn()" class="btn-pro" data-key="btn_save">Simpan Rekod</button></div>
+</div>
+
+<script>
+// Firebase Configuration Updated
+const firebaseConfig = {
+  apiKey: "AIzaSyBw9wZe5giXZkcLoa87hAJbBspYWymw54k",
+  authDomain: "budgettracker-cc1f7.firebaseapp.com",
+  projectId: "budgettracker-cc1f7",
+  storageBucket: "budgettracker-cc1f7.firebasestorage.app",
+  messagingSenderId: "20277579903",
+  appId: "1:20277579903:web:96a2d794bf70b46083af4a",
+  measurementId: "G-WEMT9BLZ7L"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(), db = firebase.firestore();
+
+const i18n = {
+    ms: { sub_title: "Versi Antarabangsa Premium", forgot_pass: "Lupa Kata Laluan?", btn_login: "Log Masuk", btn_signup: "Daftar Sekarang", toggle_signup: "Cipta Akaun Baru", toggle_login: "Dah ada akaun? Log Masuk", ph_name: "Nama Penuh", ph_email: "Alamat Emel", ph_pass: "Kata Laluan", welcome: "Selamat Kembali,", total_bal: "JUMLAH BAKI", income: "MASUK", expense: "KELUAR", monthly_limit: "Had Belanja Bulanan", set_limit: "Set Had", ready: "Sedia", recent_tx: "Transaksi Terkini", nav_home: "Utama", nav_settings: "Tetapan", dark_mode: "🌙 Mod Gelap / Cerah", logout: "Log Keluar", new_record: "Rekod Baru", ph_desc: "Keterangan", ph_amt: "Jumlah (- keluar)", btn_save: "Simpan Rekod", del_confirm: "Hapus rekod ini?", limit_exceeded: "Had Melebihi!", used: "Guna", balance: "Baki", lang_label: "PILIH BAHASA", cat_food: "Makanan", cat_salary: "Gaji", cat_trans: "Transport", cat_shop: "Shopping", cat_ent: "Hiburan", cat_other: "Lain-lain" },
+    en: { sub_title: "Premium International Version", forgot_pass: "Forgot Password?", btn_login: "Login", btn_signup: "Sign Up Now", toggle_signup: "Create New Account", toggle_login: "Have an account? Login", ph_name: "Full Name", ph_email: "Email Address", ph_pass: "Password", welcome: "Welcome Back,", total_bal: "TOTAL BALANCE", income: "INCOME", expense: "EXPENSE", monthly_limit: "Monthly Budget Limit", set_limit: "Set Limit", ready: "Ready", recent_tx: "Recent Transactions", nav_home: "Home", nav_settings: "Settings", dark_mode: "🌙 Dark / Light Mode", logout: "Logout", new_record: "New Record", ph_desc: "Description", ph_amt: "Amount (- for out)", btn_save: "Save Record", del_confirm: "Delete this record?", limit_exceeded: "Limit Exceeded!", used: "Used", balance: "Balance", lang_label: "SELECT LANGUAGE", cat_food: "Food", cat_salary: "Salary", cat_trans: "Transport", cat_shop: "Shopping", cat_ent: "Entertainment", cat_other: "Others" },
+    id: { sub_title: "Versi Internasional Premium", forgot_pass: "Lupa Kata Sandi?", btn_login: "Masuk", btn_signup: "Daftar Sekarang", toggle_signup: "Buat Akun Baru", toggle_login: "Sudah punya akun? Masuk", ph_name: "Nama Lengkap", ph_email: "Alamat Email", ph_pass: "Kata Sandi", welcome: "Selamat Datang,", total_bal: "TOTAL SALDO", income: "MASUK", expense: "KELUAR", monthly_limit: "Batas Anggaran Bulanan", set_limit: "Atur Batas", ready: "Siap", recent_tx: "Transaksi Terkini", nav_home: "Beranda", nav_settings: "Pengaturan", dark_mode: "🌙 Mode Gelap / Terang", logout: "Keluar", new_record: "Catatan Baru", ph_desc: "Keterangan", ph_amt: "Jumlah (- keluar)", btn_save: "Simpan Catatan", del_confirm: "Hapus catatan ini?", limit_exceeded: "Melebihi Batas!", used: "Pakai", balance: "Sisa", lang_label: "PILIH BAHASA", cat_food: "Makanan", cat_salary: "Gaji", cat_trans: "Transportasi", cat_shop: "Belanja", cat_ent: "Hiburan", cat_other: "Lain-lain" }
+};
+const catMap = { "cat_food": "🍔", "cat_salary": "💰", "cat_trans": "🚗", "cat_shop": "🛒", "cat_ent": "🎮", "cat_other": "✨" };
+
+let currentLang = localStorage.getItem('selectedLang') || 'ms';
+let myChart, curr = 'RM', globalDocs = [], monthlyBudget = 0;
+const rates = { 'RM': 1, '$': 0.26, 'Rp': 4318.35 }; 
+
+function changeLang(lang) {
+    currentLang = lang;
+    localStorage.setItem('selectedLang', lang);
+    document.querySelectorAll('[data-key]').forEach(el => el.innerText = i18n[lang][el.getAttribute('data-key')]);
+    document.querySelectorAll('[data-placeholder]').forEach(el => el.placeholder = i18n[lang][el.getAttribute('data-placeholder')]);
+    initCatSelect();
+    if(globalDocs.length > 0) updateUI(globalDocs);
+}
+
+auth.onAuthStateChanged(user => {
+    if(user) {
+        document.getElementById('app-shell').style.display = 'block';
+        document.getElementById('auth-container-wrapper').style.display = 'none';
+        document.getElementById('lang-switch').value = currentLang;
+        changeLang(currentLang);
+        db.collection("users").doc(user.uid).onSnapshot(doc => {
+            if(doc.exists) {
+                const d = doc.data();
+                document.getElementById('user-display').innerText = d.username;
+                document.getElementById('set-username').innerText = d.username;
+                document.getElementById('set-email').innerText = user.email;
+                document.getElementById('user-av').innerText = d.username[0].toUpperCase();
+                document.getElementById('set-av').innerText = d.username[0].toUpperCase();
+                monthlyBudget = d.budgetLimit || 0;
+                if(globalDocs.length > 0) updateUI(globalDocs);
+            }
+        });
+        db.collection("users").doc(user.uid).collection("transactions").orderBy("id","desc").onSnapshot(snap => updateUI(snap.docs));
+    } else {
+        document.getElementById('app-shell').style.display = 'none';
+        document.getElementById('auth-container-wrapper').style.display = 'flex';
+    }
+});
+
+function login() { const e = document.getElementById('email').value, p = document.getElementById('password').value; if(e && p) auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message)); }
+function signup() { const n = document.getElementById('username').value, e = document.getElementById('email').value, p = document.getElementById('password').value; if(n && e && p) auth.createUserWithEmailAndPassword(e, p).then(c => db.collection("users").doc(c.user.uid).set({ username: n, email: e, budgetLimit: 0 })).catch(err => alert(err.message)); }
+function resetPassword() { const e = document.getElementById('email').value; if(!e) return alert("Email required."); auth.sendPasswordResetEmail(e).then(() => alert("Email sent!")).catch(err => alert(err.message)); }
+function toggleAuth() { const isL = document.getElementById('signup-fields').style.display === 'none'; document.getElementById('signup-fields').style.display = isL ? 'block' : 'none'; document.getElementById('signup-btn').style.display = isL ? 'block' : 'none'; document.getElementById('login-btn').style.display = isL ? 'none' : 'block'; document.getElementById('forgot-btn').style.display = isL ? 'none' : 'block'; document.getElementById('toggle-auth-btn').innerText = isL ? i18n[currentLang].toggle_login : i18n[currentLang].toggle_signup; }
+
+function updateUI(docs) {
+    globalDocs = docs; const list = document.getElementById('list'); list.innerHTML = "";
+    let bal=0, inc=0, exp=0, catData = {};
+    docs.forEach(doc => {
+        const t = doc.data(); const amtRM = parseFloat(t.amount); const cAmt = amtRM * rates[curr];
+        const transCat = i18n[currentLang][t.category] || t.category;
+        if(amtRM > 0) inc += cAmt; else { exp += Math.abs(cAmt); catData[transCat] = (catData[transCat]||0) + Math.abs(cAmt); }
+        bal += cAmt;
+        list.innerHTML += `<li><div style="display:flex;align-items:center;"><div style="font-size:20px;margin-right:12px;">${catMap[t.category]||'📦'}</div><div><strong>${t.desc}</strong><br><small style="color:var(--subtext)">${transCat}</small></div></div><div style="text-align:right;"><div style="color:${amtRM>0?'var(--success)':'var(--danger)'};font-weight:800;">${amtRM>0?'+':''}${Math.abs(cAmt).toLocaleString(undefined,{minimumFractionDigits:2})}</div><small onclick="delTxn('${doc.id}')" style="color:#cbd5e1;cursor:pointer;">X</small></div></li>`;
+    });
+    document.getElementById('total-balance').innerText = `${curr} ${bal.toLocaleString(undefined,{minimumFractionDigits:2})}`;
+    document.getElementById('total-inc').innerText = inc.toLocaleString(undefined,{minimumFractionDigits:2});
+    document.getElementById('total-exp').innerText = exp.toLocaleString(undefined,{minimumFractionDigits:2});
+    updateBudgetUI(exp); 
+    renderChart(catData);
+}
+
+function updateBudgetUI(spent) {
+    const lim = monthlyBudget * rates[curr]; document.getElementById('budget-display').innerText = `${curr} ${lim.toLocaleString()}`;
+    const pct = lim > 0 ? (spent / lim) * 100 : 0; const bar = document.getElementById('budget-progress');
+    bar.style.width = Math.min(pct, 100) + "%"; bar.style.background = pct > 100 ? "var(--danger)" : (pct > 80 ? "var(--warning)" : "var(--success)");
+    document.getElementById('budget-status').innerText = pct >= 100 ? i18n[currentLang].limit_exceeded : `${i18n[currentLang].used} ${pct.toFixed(0)}%`;
+    document.getElementById('budget-remaining').innerText = `${i18n[currentLang].balance}: ${(lim - spent).toFixed(0)}`;
+}
+
+function setBudgetPrompt() { const v = prompt(`${i18n[currentLang].monthly_limit} (${curr}):`); if(v) db.collection("users").doc(auth.currentUser.uid).update({ budgetLimit: parseFloat(v) / rates[curr] }); }
+
+function renderChart(data) {
+    const ctx = document.getElementById('chart').getContext('2d');
+    if(myChart) myChart.destroy();
+    myChart = new Chart(ctx, { 
+        type: 'doughnut', 
+        data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#a855f7'] }] }, 
+        options: { cutout: '70%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, color: getComputedStyle(document.body).getPropertyValue('--text') } } } } 
+    });
+}
+
+function showPage(id, el) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-'+id).classList.add('active'); document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
+function toggleAddModal() { const m = document.getElementById('add-modal'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+function saveTxn() { const d = document.getElementById('txn-desc').value, a = document.getElementById('txn-amt').value, c = document.getElementById('txn-cat').value; if(d && a) { db.collection("users").doc(auth.currentUser.uid).collection("transactions").add({ desc: d, amount: parseFloat(a)/rates[curr], category: c, id: Date.now() }); toggleAddModal(); } }
+function delTxn(id) { if(confirm(i18n[currentLang].del_confirm)) db.collection("users").doc(auth.currentUser.uid).collection("transactions").doc(id).delete(); }
+function initCatSelect() { const sel = document.getElementById('txn-cat'); if(!sel) return; sel.innerHTML = ""; Object.keys(catMap).forEach(k => { sel.innerHTML += `<option value="${k}">${catMap[k]} ${i18n[currentLang][k]}</option>`; }); }
+function updateGlobalCurr(v) { curr = v; updateUI(globalDocs); }
+function logout() { auth.signOut().then(() => location.reload()); }
+</script>
+</body>
+</html>
