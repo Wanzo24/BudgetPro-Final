@@ -9,6 +9,10 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1077/1077114.png">
+
     
     <style>
         :root { 
@@ -266,6 +270,16 @@ function delTxn(id) { if(confirm(i18n[currentLang].del_confirm)) db.collection("
 function initCatSelect() { const sel = document.getElementById('txn-cat'); if(!sel) return; sel.innerHTML = ""; Object.keys(catMap).forEach(k => { sel.innerHTML += `<option value="${k}">${catMap[k]} ${i18n[currentLang][k]}</option>`; }); }
 function updateGlobalCurr(v) { curr = v; updateUI(globalDocs); }
 function logout() { auth.signOut().then(() => location.reload()); }
+
+// Daftarkan Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker didaftarkan!', reg))
+      .catch(err => console.log('Pendaftaran Service Worker gagal!', err));
+  });
+}
+    
 </script>
 </body>
 </html>
